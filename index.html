@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Follow the 100 Pushups training program to do 100 consecutive push-ups">
+  <meta name="theme-color" content="#e85d04">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>100 Pushups</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- =============================================
+       WELCOME / ONBOARDING SCREEN
+       ============================================= -->
+  <div id="screen-welcome" class="screen">
+    <div class="welcome-logo">💪</div>
+    <h1 class="welcome-title">100 Pushups</h1>
+    <p class="welcome-subtitle">
+      A proven program to build up to 100 consecutive push-ups, starting from your current level.
+    </p>
+
+    <div class="test-box">
+      <h2>🧪 Initial Test</h2>
+      <p>
+        Do as many push-ups as you can right now (without stopping).<br>
+        Enter your result below — the app will start you at the right level.
+      </p>
+      <div class="input-group">
+        <input
+          type="number"
+          id="welcome-input"
+          placeholder="e.g. 15"
+          min="0"
+          max="200"
+          inputmode="numeric"
+          autocomplete="off"
+        >
+        <button class="btn btn-primary" id="welcome-start-btn">Start →</button>
+      </div>
+      <p style="margin-top:14px; font-size:0.75rem; color:var(--text-dim); text-align:center;">
+        Enter 0 if you can't do any yet — everyone starts somewhere!
+      </p>
+    </div>
+  </div>
+
+  <!-- =============================================
+       WORKOUT SCREEN
+       ============================================= -->
+  <div id="screen-workout" class="screen">
+    <div class="app-header">
+      <h1>💪 100 Pushups</h1>
+      <p>Today's Workout</p>
+    </div>
+    <div id="workout-content" class="scroll-content">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+
+  <!-- =============================================
+       PROGRESS SCREEN
+       ============================================= -->
+  <div id="screen-progress" class="screen">
+    <div class="app-header">
+      <h1>📈 Progress</h1>
+      <p>Your training history</p>
+    </div>
+    <div id="progress-content" class="scroll-content progress-content">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+
+  <!-- =============================================
+       INFO / SETTINGS SCREEN
+       ============================================= -->
+  <div id="screen-info" class="screen">
+    <div class="app-header">
+      <h1>⚙️ Settings</h1>
+      <p>Program info & settings</p>
+    </div>
+    <div id="info-content" class="scroll-content settings-content">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<!-- =============================================
+     BOTTOM NAVIGATION
+     ============================================= -->
+<nav class="bottom-nav" id="bottom-nav" style="display:none">
+  <button class="nav-btn active" data-screen="workout">
+    <span class="icon">🏋️</span>
+    <span>Workout</span>
+  </button>
+  <button class="nav-btn" data-screen="progress">
+    <span class="icon">📈</span>
+    <span>Progress</span>
+  </button>
+  <button class="nav-btn" data-screen="info">
+    <span class="icon">⚙️</span>
+    <span>Settings</span>
+  </button>
+</nav>
+
+<!-- =============================================
+     REST TIMER OVERLAY
+     ============================================= -->
+<div class="timer-overlay" id="timer-overlay">
+  <div class="timer-title">Rest</div>
+  <div class="timer-ring">
+    <svg width="200" height="200" viewBox="0 0 200 200">
+      <circle class="timer-ring-bg" cx="100" cy="100" r="88"/>
+      <circle class="timer-ring-fill" id="timer-ring-fill" cx="100" cy="100" r="88"
+        stroke-dasharray="552.9" stroke-dashoffset="0"/>
+    </svg>
+    <div class="timer-digits" id="timer-digits">60</div>
+  </div>
+  <div class="timer-next-info" id="timer-next-info"></div>
+  <button class="timer-skip" id="timer-skip">Skip Rest ›</button>
+</div>
+
+<!-- =============================================
+     RE-TEST MODAL
+     ============================================= -->
+<div class="timer-overlay" id="retest-modal" style="background:rgba(0,0,0,0.9);">
+  <div style="background:var(--surface);border-radius:var(--radius);padding:28px;width:100%;max-width:340px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h2 style="font-size:1.2rem;">🧪 New Test Result</h2>
+      <button id="retest-close" style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;line-height:1;">×</button>
+    </div>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:20px;line-height:1.5;">
+      How many consecutive push-ups did you do in the test? This will place you in the correct training cycle.
+    </p>
+    <input
+      type="number"
+      id="retest-input"
+      placeholder="e.g. 25"
+      min="0"
+      max="200"
+      inputmode="numeric"
+      style="width:100%;background:var(--surface2);border:2px solid var(--surface3);border-radius:var(--radius-sm);color:var(--text);font-size:1.2rem;padding:12px 16px;text-align:center;outline:none;margin-bottom:14px;"
+    >
+    <button id="retest-submit" class="btn btn-primary btn-full">
+      Start New Cycle →
+    </button>
+  </div>
+</div>
+
+<!-- =============================================
+     TOAST
+     ============================================= -->
+<div class="toast" id="toast"></div>
+
+<!-- Scripts -->
+<script src="data.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
