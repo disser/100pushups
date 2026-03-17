@@ -30,8 +30,19 @@ let timerState = {
   wakeLock: null,
 };
 
-// Beep sound helper
-function playBeep() {
+// Alert helper - vibration on iOS, beep on desktop
+function playAlert() {
+  // Try vibration first (works on iOS, Android)
+  if ('vibrate' in navigator) {
+    try {
+      navigator.vibrate(100); // 100ms vibration
+      return;
+    } catch(e) {
+      console.warn('Vibration failed:', e);
+    }
+  }
+  
+  // Fallback to beep on desktop
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
@@ -51,7 +62,7 @@ function playBeep() {
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.15);
   } catch(e) {
-    console.warn('Beep failed:', e);
+    console.warn('Audio alert failed:', e);
   }
 }
 
@@ -152,7 +163,7 @@ function getWorkoutStatus() {
   if (lastSession) {
     const daysSince = daysBetween(lastSession.date, today);
     const requiredBreak = lastSession.breakDays || 1;
-    if (daysSince < requiredBreak) {
+    if (daysSince <= requiredBreak) {
       const nextDate = new Date(lastSession.date);
       nextDate.setDate(nextDate.getDate() + requiredBreak);
       return {
@@ -470,9 +481,9 @@ function showTimer(seconds, nextSetLabel, onDone) {
     fill.style.strokeDashoffset = offset;
     digits.textContent = timerState.remaining;
 
-    // Beep for last 5 seconds
+    // Alert for last 5 seconds (vibration on iOS, beep on desktop)
     if (timerState.remaining > 0 && timerState.remaining <= 5) {
-      playBeep();
+      playAlert();
     }
 
     if (timerState.remaining <= 0) {
