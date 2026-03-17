@@ -27,7 +27,33 @@ let timerState = {
   remaining: 0,
   intervalId: null,
   onDone: null,
+  wakeLock: null,
 };
+
+// Beep sound helper
+function playBeep() {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.frequency.value = 440; // A4 note
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.15);
+  } catch(e) {
+    console.warn('Beep failed:', e);
+  }
+}
 
 // ---- Persistence ----
 const STORAGE_KEY = 'pushups100_v1';
@@ -90,6 +116,7 @@ function showScreen(name) {
   const navBtn = document.querySelector(`.nav-btn[data-screen="${name}"]`);
   if (navBtn) navBtn.classList.add('active');
   state.activeScreen = name;
+  saveState(); // Always persist screen state
 
   if (name === 'workout') renderWorkoutScreen();
   if (name === 'progress') renderProgressScreen();
@@ -103,7 +130,7 @@ function startProgram(testResult) {
   state.currentDayIndex = 0;
   state.cycleStartDate = todayStr();
   state.initialized = true;
-  state.history = [];
+  // DO NOT wipe history - preserve it across levels
   saveState();
   showScreen('workout');
 }
@@ -167,6 +194,9 @@ function renderWorkoutScreen() {
         <p>Your muscles are recovering and getting stronger.</p>
         <p>Next session available <strong>${formatDate(ws.nextDate)}</strong>${ws.daysLeft > 1 ? ` (in ${ws.daysLeft} days)` : ' (tomorrow)'}.</p>
         <p style="margin-top:12px; font-size:0.8rem;">You're on <strong>${level ? level.label : ''}</strong>, Day ${state.currentDayIndex + 1} next.</p>
+        <div style="margin-top:20px;">
+          <button class="btn btn-secondary btn-full" onclick="showReTestModal()">🧪 Retake Test</button>
+        </div>
       </div>`;
     return;
   }
@@ -250,6 +280,7 @@ function renderWorkoutScreen() {
       <div class="workout-meta">
         <span class="workout-badge">${level.label}</span>
         <span style="font-size:0.8rem;color:var(--text-muted)">${dayLabel}</span>
+        <button style="background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;padding:2px 8px;margin-left:auto;" onclick="showReTestModal()" title="Retake test">🧪</button>
       </div>
       <div class="workout-title">Today's Workout</div>
       <div class="workout-subtitle">Rest ${day.rest}s between sets • ${day.sets.length} sets total</div>
@@ -377,11 +408,19 @@ function submitReTest() {
     showToast('Please enter a valid number');
     return;
   }
+  
+  const clearHistory = document.getElementById('retest-clear-history').checked;
+  
   hideReTestModal();
   const level = getLevelForTestResult(val);
   state.levelId = level.id;
   state.currentDayIndex = 0;
   state.cycleStartDate = todayStr();
+  
+  if (clearHistory) {
+    state.history = [];
+  }
+  
   session = { active: false, dayIndex: 0, currentSetIndex: 0, setResults: [] };
   saveState();
   showToast(`Starting ${level.label} cycle!`);
@@ -415,12 +454,26 @@ function showTimer(seconds, nextSetLabel, onDone) {
   timerState.remaining = seconds;
   timerState.onDone = onDone;
 
+  // Request screen wake lock
+  if ('wakeLock' in navigator) {
+    navigator.wakeLock.request('screen').then(wl => {
+      timerState.wakeLock = wl;
+    }).catch(e => {
+      console.warn('Wake lock failed:', e);
+    });
+  }
+
   function tick() {
     if (!timerState.running) return;
     const progress = timerState.remaining / timerState.total;
     const offset = CIRCUMFERENCE * (1 - progress);
     fill.style.strokeDashoffset = offset;
     digits.textContent = timerState.remaining;
+
+    // Beep for last 5 seconds
+    if (timerState.remaining > 0 && timerState.remaining <= 5) {
+      playBeep();
+    }
 
     if (timerState.remaining <= 0) {
       finishTimer();
@@ -438,6 +491,15 @@ function finishTimer() {
   clearTimeout(timerState.intervalId);
   const overlay = document.getElementById('timer-overlay');
   overlay.classList.remove('visible');
+  
+  // Release screen wake lock
+  if (timerState.wakeLock) {
+    timerState.wakeLock.release().catch(e => {
+      console.warn('Wake lock release failed:', e);
+    });
+    timerState.wakeLock = null;
+  }
+  
   if (timerState.onDone) timerState.onDone();
 }
 
