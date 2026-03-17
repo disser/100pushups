@@ -621,6 +621,14 @@ function renderInfoScreen() {
           </div>
           <div class="settings-value">›</div>
         </div>
+        <div class="settings-row" style="cursor:pointer" onclick="refreshApp()">
+          <div class="settings-icon">🔄</div>
+          <div class="settings-text">
+            <p>Refresh App</p>
+            <small>Load latest version of the app</small>
+          </div>
+          <div class="settings-value">›</div>
+        </div>
         <div class="settings-row" style="cursor:pointer" onclick="if(confirm('Reset all progress?')) resetAll()">
           <div class="settings-icon">🗑️</div>
           <div class="settings-text">
@@ -668,6 +676,11 @@ function resetAll() {
   };
   session = { active: false, dayIndex: 0, currentSetIndex: 0, setResults: [] };
   location.reload();
+}
+
+function refreshApp() {
+  saveState(); // Save latest state before reload
+  location.reload(); // Reload page (localStorage persists)
 }
 
 document.addEventListener('DOMContentLoaded', () => {
