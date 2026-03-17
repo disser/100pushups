@@ -165,11 +165,11 @@ function getWorkoutStatus() {
     const requiredBreak = lastSession.breakDays || 1;
     if (daysSince <= requiredBreak) {
       const nextDate = new Date(lastSession.date);
-      nextDate.setDate(nextDate.getDate() + requiredBreak);
+      nextDate.setDate(nextDate.getDate() + requiredBreak + 1);
       return {
         status: 'rest',
         nextDate: nextDate.toISOString().slice(0, 10),
-        daysLeft: requiredBreak - daysSince,
+        daysLeft: requiredBreak - daysSince + 1,
       };
     }
   }
