@@ -96,19 +96,33 @@ function getCurrentDay() {
   return level.days[state.currentDayIndex] || null;
 }
 
+// Parse a YYYY-MM-DD string as local midnight (not UTC midnight).
+// new Date("2026-03-17") is UTC midnight, which in UTC-7 is 5 PM the *previous* day,
+// causing getDate()/setDate() and toLocaleDateString() to be off by one.
+function parseLocalDate(str) {
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d); // local midnight
+}
+
+function localDateStr(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return '';
-  const d = new Date(dateStr);
+  const d = parseLocalDate(dateStr); // local midnight, not UTC
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return localDateStr(new Date()); // local date, not UTC
 }
 
 function daysBetween(a, b) {
-  const da = new Date(a);
-  const db = new Date(b);
+  const da = parseLocalDate(a);
+  const db = parseLocalDate(b);
   return Math.round((db - da) / (1000 * 60 * 60 * 24));
 }
 
@@ -164,11 +178,11 @@ function getWorkoutStatus() {
     const daysSince = daysBetween(lastSession.date, today);
     const requiredBreak = lastSession.breakDays || 1;
     if (daysSince <= requiredBreak) {
-      const nextDate = new Date(lastSession.date);
+      const nextDate = parseLocalDate(lastSession.date); // local midnight, not UTC
       nextDate.setDate(nextDate.getDate() + requiredBreak + 1);
       return {
         status: 'rest',
-        nextDate: nextDate.toISOString().slice(0, 10),
+        nextDate: localDateStr(nextDate), // format using local components, not toISOString()
         daysLeft: requiredBreak - daysSince + 1,
       };
     }
