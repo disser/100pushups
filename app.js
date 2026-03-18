@@ -219,8 +219,9 @@ function renderWorkoutScreen() {
         <p>Your muscles are recovering and getting stronger.</p>
         <p>Next session available <strong>${formatDate(ws.nextDate)}</strong>${ws.daysLeft > 1 ? ` (in ${ws.daysLeft} days)` : ' (tomorrow)'}.</p>
         <p style="margin-top:12px; font-size:0.8rem;">You're on <strong>${level ? level.label : ''}</strong>, Day ${state.currentDayIndex + 1} next.</p>
-        <div style="margin-top:20px;">
+        <div style="margin-top:20px; display:flex; flex-direction:column; gap:10px;">
           <button class="btn btn-secondary btn-full" onclick="showReTestModal()">🧪 Retake Test</button>
+          <button class="btn btn-ghost btn-full" onclick="forceWorkout()">💪 Work Out Anyway</button>
         </div>
       </div>`;
     return;
@@ -450,6 +451,101 @@ function submitReTest() {
   saveState();
   showToast(`Starting ${level.label} cycle!`);
   showScreen('workout');
+}
+
+// Bypass the rest-day gate and render the next workout directly.
+// No state is changed — the workout records normally when completed.
+function forceWorkout() {
+  const level = getCurrentLevel();
+  if (!level) return;
+  const dayIndex = state.currentDayIndex;
+  const day = level.days[dayIndex];
+  if (!day) return;
+
+  const container = document.getElementById('workout-content');
+  const totalDays = level.days.length;
+  const setsDone = session.active && session.dayIndex === dayIndex ? session.currentSetIndex : 0;
+  const progress = setsDone / day.sets.length;
+
+  let setsHtml = '';
+  for (let i = 0; i < day.sets.length; i++) {
+    const set = day.sets[i];
+    const isDone = session.active && i < session.currentSetIndex;
+    const isActive = session.active && i === session.currentSetIndex;
+    const result = session.setResults[i];
+
+    let repText, repLabel, actionHtml;
+    if (set.isMax) {
+      repText = `${set.minReps}+`;
+      repLabel = `as many as you can (min ${set.minReps})`;
+    } else {
+      repText = set.reps;
+      repLabel = 'push-ups';
+    }
+
+    if (isDone) {
+      actionHtml = `<span class="set-check">✅</span>`;
+    } else if (isActive) {
+      if (set.isMax) {
+        actionHtml = `
+          <div class="max-input-row">
+            <input type="number" class="max-reps-input" id="max-input-${i}"
+              placeholder="${set.minReps}" min="0" max="200" inputmode="numeric">
+            <button class="btn-done" onclick="completeSet(${i})">Done</button>
+          </div>`;
+      } else {
+        actionHtml = `<button class="btn-done" onclick="completeSet(${i})">Done</button>`;
+      }
+    } else {
+      actionHtml = '';
+    }
+
+    setsHtml += `
+      <div class="set-item ${isDone ? 'done' : ''} ${isActive ? 'active' : ''}" id="set-${i}">
+        <div class="set-num">${i + 1}</div>
+        <div class="set-info">
+          <div class="set-reps">${repText} <span style="font-size:0.85rem;font-weight:400">reps</span></div>
+          <div class="set-reps-label">${repLabel}</div>
+          ${isDone && result ? `<div class="set-actual">✓ ${result.reps} done</div>` : ''}
+        </div>
+        <div class="set-action">${actionHtml}</div>
+      </div>`;
+  }
+
+  const allDone = session.active && session.currentSetIndex >= day.sets.length;
+  const dayLabel = `Day ${dayIndex + 1} of ${totalDays}`;
+
+  container.innerHTML = `
+    <div class="workout-header">
+      <div class="workout-meta">
+        <span class="workout-badge">${level.label}</span>
+        <span style="font-size:0.8rem;color:var(--text-muted)">${dayLabel}</span>
+        <button style="background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;padding:2px 8px;margin-left:auto;" onclick="showReTestModal()" title="Retake test">🧪</button>
+      </div>
+      <div class="workout-title">Today's Workout</div>
+      <div class="workout-subtitle">Rest ${day.rest}s between sets • ${day.sets.length} sets total</div>
+      <div class="workout-progress-bar">
+        <div class="workout-progress-fill" style="width:${progress * 100}%"></div>
+      </div>
+    </div>
+    <div class="rest-ribbon">
+      ⏱️ Rest <strong>${day.rest} seconds</strong> between sets
+      &nbsp;•&nbsp; After this session: <strong>min ${day.breakDays} day${day.breakDays > 1 ? 's' : ''} rest</strong>
+    </div>
+    <div class="sets-list">${setsHtml}</div>
+    ${!session.active ? `
+      <div class="workout-complete-btn">
+        <button class="btn btn-primary btn-full" onclick="startSession(${dayIndex})">
+          💪 Start Workout
+        </button>
+      </div>` : ''}
+    ${allDone ? `
+      <div class="workout-complete-btn">
+        <button class="btn btn-primary btn-full pulse" onclick="completeWorkout()">
+          ✅ Complete Day ${dayIndex + 1}
+        </button>
+      </div>` : ''}
+  `;
 }
 
 function repeatCycle() {

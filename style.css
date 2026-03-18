@@ -136,6 +136,12 @@ body {
   color: var(--text);
 }
 .btn-secondary:hover { background: #3a3a3a; }
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--surface3);
+}
+.btn-ghost:hover { background: var(--surface2); color: var(--text); }
 .btn-danger {
   background: transparent;
   color: var(--danger);
